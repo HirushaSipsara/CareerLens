@@ -8,6 +8,7 @@ BACKEND_IMAGE="${BACKEND_IMAGE:-}"
 FRONTEND_IMAGE="${FRONTEND_IMAGE:-}"
 DOCKER_USERNAME="${DOCKER_USERNAME:-}"
 DOCKER_PASSWORD="${DOCKER_PASSWORD:-}"
+OPENROUTER_API_KEY="${OPENROUTER_API_KEY:-}"
 
 compose() {
   if sudo -E docker compose version >/dev/null 2>&1; then
@@ -34,6 +35,12 @@ git reset --hard origin/main
 echo "  Git SHA: $(git rev-parse --short HEAD)"
 
 if [ -n "$BACKEND_IMAGE" ] && [ -n "$FRONTEND_IMAGE" ]; then
+  # Write real backend .env (overrides placeholder from setup.sh)
+  if [ -n "$OPENROUTER_API_KEY" ]; then
+    echo "OPENROUTER_API_KEY=$OPENROUTER_API_KEY" > "$APP_DIR/backend/.env"
+    chmod 600 "$APP_DIR/backend/.env"
+    echo "  Written backend/.env with real API key."
+  fi
   echo "[2/4] Logging in to Docker Hub and pulling release images..."
   echo "$DOCKER_PASSWORD" | sudo -E docker login -u "$DOCKER_USERNAME" --password-stdin
   compose pull backend frontend

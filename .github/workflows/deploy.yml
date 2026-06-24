@@ -9,6 +9,7 @@ env:
   DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
   BACKEND_IMAGE: ${{ secrets.DOCKER_USERNAME }}/careerlens-backend
   FRONTEND_IMAGE: ${{ secrets.DOCKER_USERNAME }}/careerlens-frontend
+  OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
 
 jobs:
   build_and_push:
@@ -66,7 +67,7 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           timeout: 600s
-          envs: DOCKER_USERNAME,DOCKER_PASSWORD,BACKEND_IMAGE,FRONTEND_IMAGE
+          envs: DOCKER_USERNAME,DOCKER_PASSWORD,BACKEND_IMAGE,FRONTEND_IMAGE,OPENROUTER_API_KEY
           script: |
             cd /home/ubuntu/careerlens
             git fetch origin main
@@ -75,4 +76,5 @@ jobs:
             export FRONTEND_IMAGE="${{ env.FRONTEND_IMAGE }}:latest"
             export DOCKER_USERNAME="${{ secrets.DOCKER_USERNAME }}"
             export DOCKER_PASSWORD="${{ secrets.DOCKER_PASSWORD }}"
+            export OPENROUTER_API_KEY="${{ secrets.OPENROUTER_API_KEY }}"
             bash scripts/deploy.sh
