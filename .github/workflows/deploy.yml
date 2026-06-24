@@ -66,10 +66,13 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           timeout: 600s
+          envs: DOCKER_USERNAME,DOCKER_PASSWORD,BACKEND_IMAGE,FRONTEND_IMAGE
           script: |
             cd /home/ubuntu/careerlens
             git fetch origin main
             git reset --hard origin/main
             export BACKEND_IMAGE="${{ env.BACKEND_IMAGE }}:latest"
             export FRONTEND_IMAGE="${{ env.FRONTEND_IMAGE }}:latest"
+            export DOCKER_USERNAME="${{ secrets.DOCKER_USERNAME }}"
+            export DOCKER_PASSWORD="${{ secrets.DOCKER_PASSWORD }}"
             bash scripts/deploy.sh

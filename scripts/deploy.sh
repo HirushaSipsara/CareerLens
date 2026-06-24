@@ -6,12 +6,14 @@ MAX_RETRIES="${MAX_RETRIES:-10}"
 RETRY_DELAY="${RETRY_DELAY:-3}"
 BACKEND_IMAGE="${BACKEND_IMAGE:-}"
 FRONTEND_IMAGE="${FRONTEND_IMAGE:-}"
+DOCKER_USERNAME="${DOCKER_USERNAME:-}"
+DOCKER_PASSWORD="${DOCKER_PASSWORD:-}"
 
 compose() {
-  if sudo docker compose version >/dev/null 2>&1; then
-    sudo docker compose "$@"
+  if sudo -E docker compose version >/dev/null 2>&1; then
+    sudo -E docker compose "$@"
   else
-    sudo docker-compose "$@"
+    sudo -E docker-compose "$@"
   fi
 }
 
@@ -32,7 +34,8 @@ git reset --hard origin/main
 echo "  Git SHA: $(git rev-parse --short HEAD)"
 
 if [ -n "$BACKEND_IMAGE" ] && [ -n "$FRONTEND_IMAGE" ]; then
-  echo "[2/4] Pulling release images..."
+  echo "[2/4] Logging in to Docker Hub and pulling release images..."
+  echo "$DOCKER_PASSWORD" | sudo -E docker login -u "$DOCKER_USERNAME" --password-stdin
   compose pull backend frontend
   echo "  Backend image:  $BACKEND_IMAGE"
   echo "  Frontend image: $FRONTEND_IMAGE"
