@@ -47,7 +47,7 @@ if [ -n "$BACKEND_IMAGE" ] && [ -n "$FRONTEND_IMAGE" ]; then
   echo "  Backend image:  $BACKEND_IMAGE"
   echo "  Frontend image: $FRONTEND_IMAGE"
   echo "[3/4] Starting containers from pulled images..."
-  compose up -d --remove-orphans
+  compose up -d --force-recreate --remove-orphans
 else
   echo "[2/4] Rebuilding containers from source..."
   compose up -d --build --remove-orphans
