@@ -65,7 +65,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          timeout: 120s
+          timeout: 600s
           script: |
             cd /home/ubuntu/careerlens
             export BACKEND_IMAGE="${{ env.BACKEND_IMAGE }}:latest"

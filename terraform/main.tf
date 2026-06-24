@@ -22,13 +22,13 @@ resource "aws_security_group" "careerlens_sg" {
   name        = "${var.project_name}-sg"
   description = "Security group for CareerLens EC2"
 
-  # SSH — your IP only
+  # SSH — open to all IPs (auth enforced by private key)
   ingress {
-    description = "SSH from my IP"
+    description = "SSH for GitHub Actions and admin access"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = [var.my_ip]
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   # HTTP — frontend (public)
@@ -96,8 +96,13 @@ resource "aws_instance" "careerlens" {
     git clone "${var.repo_url}" /home/ubuntu/careerlens
     chown -R ubuntu:ubuntu /home/ubuntu/careerlens
     REPO_URL="${var.repo_url}" APP_DIR="/home/ubuntu/careerlens" bash /home/ubuntu/careerlens/scripts/setup.sh
-    bash /home/ubuntu/careerlens/scripts/deploy.sh
+    sudo -u ubuntu bash /home/ubuntu/careerlens/scripts/deploy.sh
   EOF
+
+  # user_data only runs on first boot — ignore diffs on live instances
+  lifecycle {
+    ignore_changes = [user_data]
+  }
 
   root_block_device {
     volume_size = 20 # GB — enough for Docker images

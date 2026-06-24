@@ -12,6 +12,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 60s
 
   frontend:
     image: ${FRONTEND_IMAGE:-careerlens-frontend:local}
@@ -21,7 +22,7 @@ services:
       - "8088:80"
     depends_on:
       backend:
-        condition: service_healthy
+        condition: service_started
 
   prometheus:
     image: prom/prometheus:latest
