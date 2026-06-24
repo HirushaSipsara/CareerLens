@@ -105,10 +105,21 @@ Example payload:
 - The backend is returning structured analysis JSON from OpenRouter
 - Prometheus metrics are exposed for later monitoring work
 
+## Automation Scripts
+
+- `scripts/setup.sh` prepares a fresh Ubuntu EC2 instance with Docker, Compose, Git, the repo checkout, and the backend `.env` file.
+- `scripts/deploy.sh` pulls the latest `main` branch and restarts the stack with Docker Compose.
+
+Typical EC2 flow:
+
+```bash
+chmod +x scripts/setup.sh scripts/deploy.sh
+bash scripts/setup.sh
+bash scripts/deploy.sh
+```
+
 ## Next Steps
 
-- Add Dockerfiles and `docker-compose.yml`
-- Add deployment scripts
 - Add Terraform for AWS infrastructure
 - Add GitHub Actions CI/CD
 - Add Prometheus and Grafana containers for monitoring
