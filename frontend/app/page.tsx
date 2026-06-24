@@ -31,10 +31,7 @@ interface AnalysisResults {
   roadmap?: RoadmapStep[]
 }
 
-const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:5000').replace(
-  /\/$/,
-  '',
-)
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, '')
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : 'An error occurred. Please try again.'
@@ -58,11 +55,14 @@ export default function CareerLens() {
     setLoading(true)
 
     try {
-      const response = await fetch(`${API_BASE_URL}/analyze`, {
+      const response = await fetch(
+        API_BASE_URL ? `${API_BASE_URL}/analyze` : '/analyze',
+        {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cv_text: cvText, skills }),
-      })
+        },
+      )
 
       if (!response.ok) {
         throw new Error(`Failed to analyze profile (${response.status})`)

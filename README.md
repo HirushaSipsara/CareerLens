@@ -34,6 +34,25 @@ CareerLens/
 
 ## How to run locally
 
+### Docker Compose
+
+```powershell
+cd F:\Projects\CareerLens
+docker compose up --build
+```
+
+Open:
+
+```text
+http://localhost:8088
+```
+
+Supporting services:
+
+- `http://localhost:5000/health`
+- `http://localhost:9090`
+- `http://localhost:3001`
+
 ### Frontend
 
 ```powershell
@@ -96,6 +115,6 @@ Example payload:
 
 ## Notes
 
-- The frontend expects the backend at `http://localhost:5000` by default.
-- You can override that with `NEXT_PUBLIC_API_BASE_URL` if needed.
+- The frontend uses the same origin by default so the Nginx container can proxy `/analyze` to the backend.
+- You can still override the backend target with `NEXT_PUBLIC_API_BASE_URL` for direct frontend runs.
 - Do not commit `backend/.env`.
