@@ -1,140 +1,130 @@
 # CareerLens
 
-CareerLens is a simple AI-powered web app that helps a user turn raw CV text and current skills into practical tech career guidance.
+CareerLens is a modern, AI-powered web application that turns raw CV text and current skills into actionable tech career guidance.
 
-The flow is:
-1. Paste CV text and a skills list in the frontend.
-2. Send that data to a Flask backend.
-3. Call OpenRouter with a Gemma 4 free model.
-4. Return structured JSON with ranked career paths, skill gaps, and a 3-month roadmap.
+The application workflow is:
+1. The user pastes their CV text and list of skills into the frontend interface.
+2. The frontend sends this data to a Flask backend API endpoint (`/analyze`).
+3. The backend calls the OpenRouter API (utilizing free tier Gemma models with structured output) to generate career recommendations.
+4. The backend returns a structured JSON response containing ranked career paths, identified skill gaps, and a 3-month action plan/roadmap.
 
-## What is built so far
+---
 
-- React / Next.js frontend for CV and skills input
-- Flask backend with `/analyze`, `/health`, and `/metrics`
-- OpenRouter integration with a Gemma 4 free model fallback
-- Prometheus metrics for request count and latency
-- Basic project hygiene, including `.env` handling and ignore rules
+## Architecture & Tech Stack
 
-## Tech Stack
+CareerLens is built as a multi-container Dockerized application:
 
-- Frontend: Next.js, React, TypeScript, Tailwind CSS
-- Backend: Flask, Flask-CORS, Requests, python-dotenv
-- Observability: `prometheus_client`
-- AI provider: OpenRouter
+*   **Frontend**: Next.js (React, TypeScript, Tailwind CSS) static export served via **Nginx** (configured as a reverse proxy for API routing to the backend).
+*   **Backend**: Flask (Python) with `Flask-CORS`, `requests`, and `prometheus-client`.
+*   **Observability**: **Prometheus** for scraping metrics and **Grafana** for dashboard visualization.
+*   **Infrastructure**: **AWS EC2** provisioned via **Terraform**.
+*   **CI/CD**: **GitHub Actions** for building, pushing to Docker Hub, and deploying automatically over SSH.
+
+---
 
 ## Repository Layout
 
 ```text
 CareerLens/
-  frontend/   Next.js app
-  backend/    Flask API
-  README.md
+├── .github/workflows/
+│   └── deploy.yml          # CI/CD deployment workflow
+├── backend/
+│   ├── app.py              # Flask backend source code
+│   ├── Dockerfile
+│   └── .dockerignore       # Prevents local .env from baking into image
+├── frontend/
+│   ├── src/                # Next.js frontend pages & components
+│   ├── public/
+│   ├── nginx.conf          # Nginx configuration for proxying /analyze to Flask
+│   └── Dockerfile
+├── monitoring/
+│   └── prometheus.yml      # Prometheus scraper configuration
+├── scripts/
+│   ├── setup.sh            # One-time host setup script (Docker installation, folder creation)
+│   └── deploy.sh           # Main deployment runner script called by GHA/manually
+├── terraform/
+│   ├── main.tf             # Terraform resources (EC2, Security Groups)
+│   ├── variables.tf
+│   └── outputs.tf
+├── docker-compose.yml      # Orchestrates all containers (frontend, backend, prometheus, grafana)
+└── README.md
 ```
 
-## How to run locally
+---
 
-### Docker Compose
+## Live Deployment Status & Monitoring
+
+The application is deployed on AWS EC2 and is accessible via the following public endpoints:
+
+*   **Frontend Web App**: [http://54.90.112.75:8088](http://54.90.112.75:8088)
+*   **Backend API Health**: [http://54.90.112.75:5000/health](http://54.90.112.75:5000/health)
+*   **Prometheus Dashboard**: [http://54.90.112.75:9090](http://54.90.112.75:9090)
+*   **Grafana Dashboards**: [http://54.90.112.75:3001](http://54.90.112.75:3001) *(Credentials: admin / admin)*
+
+---
+
+## How to Run Locally
+
+### Method 1: Docker Compose (Recommended)
+
+To run the entire system locally with single-command orchestration:
 
 ```powershell
-cd F:\Projects\CareerLens
 docker compose up --build
 ```
 
-Open:
+This will boot all 4 services:
+*   Frontend: `http://localhost:8088`
+*   Backend API: `http://localhost:5000` (Health at `http://localhost:5000/health`)
+*   Prometheus: `http://localhost:9090`
+*   Grafana: `http://localhost:3001`
 
-```text
-http://localhost:8088
-```
+> [!NOTE]
+> Ensure you create a local `backend/.env` file with your `OPENROUTER_API_KEY` before running `docker compose up`.
 
-Supporting services:
+### Method 2: Manual Run
 
-- `http://localhost:5000/health`
-- `http://localhost:9090`
-- `http://localhost:3001`
-
-### Frontend
-
-```powershell
-cd F:\Projects\CareerLens\frontend
-npm install
-npm run dev -- --hostname 127.0.0.1 --port 3000
-```
-
-Open:
-
-```text
-http://127.0.0.1:3000
-```
-
-### Backend
-
+#### 1. Backend Setup
 Create `backend/.env`:
-
 ```env
-OPENROUTER_API_KEY=your_key_here
+OPENROUTER_API_KEY=your_openrouter_api_key_here
 ```
 
-Then run:
-
+Install dependencies and run:
 ```powershell
-cd F:\Projects\CareerLens\backend
-python -m pip install --user -r requirements.txt
+cd backend
+python -m pip install -r requirements.txt
 python -m flask --app app run --host 0.0.0.0 --port 5000 --no-reload
 ```
 
-## API Endpoints
-
-- `GET /health` - liveness check
-- `GET /metrics` - Prometheus metrics
-- `POST /analyze` - accepts `cv_text` and `skills`, returns career guidance JSON
-
-Example payload:
-
-```json
-{
-  "cv_text": "3rd year CS student...",
-  "skills": "React, Java, Spring Boot, PostgreSQL"
-}
+#### 2. Frontend Setup
+```powershell
+cd frontend
+npm install
+npm run dev -- --hostname 127.0.0.1 --port 3000
 ```
+Visit `http://127.0.0.1:3000` to interact with the UI.
 
-## Current Status
+---
 
-- Day 1-2 frontend is in place
-- Day 3-4 backend is implemented and working locally
-- The backend is returning structured analysis JSON from OpenRouter
-- Prometheus metrics are exposed for later monitoring work
+## Terraform Infrastructure Setup
 
-## Automation Scripts
+The Terraform configuration lives in `terraform/` and provisions:
+*   **EC2 Instance**: `t3.micro` on Ubuntu, with `20GB` gp3 root volume.
+*   **Security Group**: Configured with public ports for SSH (22), Frontend (8088), Flask Backend (5000), Prometheus (9090), and Grafana (3001).
 
-- `scripts/setup.sh` prepares a fresh Ubuntu EC2 instance with Docker, Compose, Git, the repo checkout, and the backend `.env` file.
-- `scripts/deploy.sh` pulls the latest `main` branch and either rebuilds locally or pulls released Docker Hub images, depending on the environment.
+### Key Terraform Implementation Details
+*   **SSH Access**: Ingress port 22 is open to `0.0.0.0/0`. This is required to allow GitHub Actions runner environments (which have dynamic IPs) to connect to the host for deployment.
+*   **Lifecycle Ignore**: The EC2 resource block includes:
+    ```hcl
+    lifecycle {
+      ignore_changes = [user_data]
+    }
+    ```
+    This prevents Terraform from trying to recreate or restart the EC2 instance whenever changes to the boot-time shell script are detected. This is essential since the AWS IAM user permissions in this environment are constrained and lack `ec2:StopInstances` / `ec2:StartInstances`.
 
-Typical EC2 flow:
-
-```bash
-chmod +x scripts/setup.sh scripts/deploy.sh
-bash scripts/setup.sh
-bash scripts/deploy.sh
-```
-
-## Terraform
-
-The Terraform config lives in `terraform/` and provisions:
-
-- one EC2 instance
-- one security group
-- public ports for the frontend, backend, Prometheus, and Grafana
-- the EC2 AMI is resolved from Canonical's public SSM parameter for Ubuntu
-
-Set these in `terraform/terraform.tfvars` before applying:
-
-- `key_name`
-- `my_ip`
-- `repo_url`
-
-Then run:
-
+### Provisioning Commands
+Configure `terraform/terraform.tfvars` with your variables (`key_name`, `repo_url`), then execute:
 ```bash
 cd terraform
 terraform init
@@ -142,39 +132,46 @@ terraform plan
 terraform apply
 ```
 
-Your AWS IAM user also needs `ssm:GetParameter` so Terraform can read the public Ubuntu AMI parameter.
+---
 
-The frontend is exposed on the public port defined in Terraform, which matches the Docker Compose setup.
+## CI/CD Deployment Pipeline
 
-## Next Steps
+The workflow in `.github/workflows/deploy.yml` automates the builds and deploys upon pushing to the `main` branch.
 
-- Add Prometheus and Grafana containers for monitoring
+### Deployment Workflow Steps:
+1. **Build**: Compiles the backend and frontend Docker images.
+2. **Push**: Uploads the tagged images (`latest` and the commit `SHA`) to Docker Hub.
+3. **SSH Deploy**: Connects to the EC2 host via SSH to trigger `scripts/deploy.sh` with the relevant environmental context.
 
-## CI/CD
+### Required GitHub Secrets
+You must configure the following repository secrets under **Settings ➔ Secrets and variables ➔ Actions**:
 
-The GitHub Actions workflow lives in `.github/workflows/deploy.yml`.
+| Secret | Description |
+| :--- | :--- |
+| `DOCKER_USERNAME` | Docker Hub username. |
+| `DOCKER_PASSWORD` | Docker Hub password/token for pushing images. |
+| `EC2_HOST` | The public IP of the target EC2 instance (`54.90.112.75`). |
+| `EC2_SSH_KEY` | Private PEM key content for ssh authentication as `ubuntu`. |
+| `OPENROUTER_API_KEY` | API key used by the Flask backend container to access OpenRouter models. |
 
-It:
+---
 
-- builds the backend and frontend Docker images
-- pushes both images to Docker Hub
-- SSHes into the EC2 instance
-- runs `scripts/deploy.sh`
+## Essential Operations & Gotchas
 
-Set these GitHub secrets before enabling the workflow:
+> [!WARNING]
+> If you are debugging deployments or updating deployment files, be aware of the following lessons learned from setting up this pipeline:
 
-- `DOCKER_USERNAME`
-- `DOCKER_PASSWORD`
-- `EC2_HOST`
-- `EC2_SSH_KEY`
+### 1. Bash Self-Modification Race (Git Pull Bug)
+When executing deployment commands remotely via an SSH action runner, **never** load the `deploy.sh` script first and run `git pull` from inside it. If bash reads and compiles a script file and the file is overwritten on disk by `git pull` during runtime, bash will experience syntax or logical issues. 
+*   *Fix*: The workflow checks out the repository, pulls the latest code to disk *before* executing the deploy script, or performs `git fetch origin main && git reset --hard origin/main` in the SSH command block directly before calling `bash scripts/deploy.sh`.
 
-For the EC2 deploy, the workflow passes these image names into the server:
+### 2. Preserving Environment Variables under Sudo (`sudo -E`)
+Docker commands on the EC2 host require superuser privileges. However, executing `sudo docker compose` clears the shell environment variables passed from the GitHub Actions runner (like `BACKEND_IMAGE`, `FRONTEND_IMAGE`, etc.).
+*   *Fix*: Always use `sudo -E docker compose` to preserve environment variables for the Docker daemon during commands like `pull` and `up`.
 
-- `BACKEND_IMAGE`
-- `FRONTEND_IMAGE`
+### 3. Docker Compose Environment Reloads (`--force-recreate`)
+Docker Compose reads env files (e.g. `backend/.env`) at startup. When GHA updates the server's `backend/.env` file with a new `OPENROUTER_API_KEY`, Docker Compose does not automatically reload it if the backend container is already running.
+*   *Fix*: The deploy script uses `docker compose up -d --force-recreate` to ensure the container is terminated, recreated, and loaded with the freshly written `.env` configurations.
 
-## Notes
-
-- The frontend uses the same origin by default so the Nginx container can proxy `/analyze` to the backend.
-- You can still override the backend target with `NEXT_PUBLIC_API_BASE_URL` for direct frontend runs.
-- Do not commit `backend/.env`.
+### 4. Vercel Analytics Removal
+Next.js `@vercel/analytics` was removed. In a self-hosted Nginx container environment, loading external vercel-specific packages results in incorrect resource routing, causing script load syntax errors (`Uncaught SyntaxError: expected expression, got '<'`) when served outside Vercel.
