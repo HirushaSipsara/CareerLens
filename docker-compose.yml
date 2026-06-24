@@ -1,5 +1,6 @@
 services:
   backend:
+    image: ${BACKEND_IMAGE:-careerlens-backend:local}
     build: ./backend
     container_name: careerlens-backend
     env_file:
@@ -13,6 +14,7 @@ services:
       retries: 3
 
   frontend:
+    image: ${FRONTEND_IMAGE:-careerlens-frontend:local}
     build: ./frontend
     container_name: careerlens-frontend
     ports:

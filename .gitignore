@@ -3,3 +3,8 @@ backend/.env
 __pycache__/
 *.pyc
 node_modules/
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/terraform.tfvars

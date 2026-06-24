@@ -108,7 +108,7 @@ Example payload:
 ## Automation Scripts
 
 - `scripts/setup.sh` prepares a fresh Ubuntu EC2 instance with Docker, Compose, Git, the repo checkout, and the backend `.env` file.
-- `scripts/deploy.sh` pulls the latest `main` branch and restarts the stack with Docker Compose.
+- `scripts/deploy.sh` pulls the latest `main` branch and either rebuilds locally or pulls released Docker Hub images, depending on the environment.
 
 Typical EC2 flow:
 
@@ -118,11 +118,60 @@ bash scripts/setup.sh
 bash scripts/deploy.sh
 ```
 
+## Terraform
+
+The Terraform config lives in `terraform/` and provisions:
+
+- one EC2 instance
+- one security group
+- public ports for the frontend, backend, Prometheus, and Grafana
+- the EC2 AMI is resolved from Canonical's public SSM parameter for Ubuntu
+
+Set these in `terraform/terraform.tfvars` before applying:
+
+- `key_name`
+- `my_ip`
+- `repo_url`
+
+Then run:
+
+```bash
+cd terraform
+terraform init
+terraform plan
+terraform apply
+```
+
+Your AWS IAM user also needs `ssm:GetParameter` so Terraform can read the public Ubuntu AMI parameter.
+
+The frontend is exposed on the public port defined in Terraform, which matches the Docker Compose setup.
+
 ## Next Steps
 
-- Add Terraform for AWS infrastructure
-- Add GitHub Actions CI/CD
 - Add Prometheus and Grafana containers for monitoring
+
+## CI/CD
+
+The GitHub Actions workflow lives in `.github/workflows/deploy.yml`.
+
+It:
+
+- builds the backend and frontend Docker images
+- pushes both images to Docker Hub
+- SSHes into the EC2 instance
+- runs `scripts/deploy.sh`
+
+Set these GitHub secrets before enabling the workflow:
+
+- `DOCKER_USERNAME`
+- `DOCKER_PASSWORD`
+- `EC2_HOST`
+- `EC2_SSH_KEY`
+
+For the EC2 deploy, the workflow passes these image names into the server:
+
+- `BACKEND_IMAGE`
+- `FRONTEND_IMAGE`
 
 ## Notes
 

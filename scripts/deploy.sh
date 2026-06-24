@@ -4,6 +4,8 @@ set -euo pipefail
 APP_DIR="${APP_DIR:-/home/ubuntu/careerlens}"
 MAX_RETRIES="${MAX_RETRIES:-10}"
 RETRY_DELAY="${RETRY_DELAY:-3}"
+BACKEND_IMAGE="${BACKEND_IMAGE:-}"
+FRONTEND_IMAGE="${FRONTEND_IMAGE:-}"
 
 compose() {
   if docker compose version >/dev/null 2>&1; then
@@ -29,8 +31,17 @@ git fetch origin main
 git reset --hard origin/main
 echo "  Git SHA: $(git rev-parse --short HEAD)"
 
-echo "[2/4] Rebuilding containers..."
-compose up -d --build --remove-orphans
+if [ -n "$BACKEND_IMAGE" ] && [ -n "$FRONTEND_IMAGE" ]; then
+  echo "[2/4] Pulling release images..."
+  compose pull backend frontend
+  echo "  Backend image:  $BACKEND_IMAGE"
+  echo "  Frontend image: $FRONTEND_IMAGE"
+  echo "[3/4] Starting containers from pulled images..."
+  compose up -d --remove-orphans
+else
+  echo "[2/4] Rebuilding containers from source..."
+  compose up -d --build --remove-orphans
+fi
 
 echo "[3/4] Waiting for backend health..."
 attempt=1
