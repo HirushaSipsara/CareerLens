@@ -68,6 +68,8 @@ jobs:
           timeout: 600s
           script: |
             cd /home/ubuntu/careerlens
+            git fetch origin main
+            git reset --hard origin/main
             export BACKEND_IMAGE="${{ env.BACKEND_IMAGE }}:latest"
             export FRONTEND_IMAGE="${{ env.FRONTEND_IMAGE }}:latest"
             bash scripts/deploy.sh
