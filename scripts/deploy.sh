@@ -8,10 +8,10 @@ BACKEND_IMAGE="${BACKEND_IMAGE:-}"
 FRONTEND_IMAGE="${FRONTEND_IMAGE:-}"
 
 compose() {
-  if docker compose version >/dev/null 2>&1; then
-    docker compose "$@"
+  if sudo docker compose version >/dev/null 2>&1; then
+    sudo docker compose "$@"
   else
-    docker-compose "$@"
+    sudo docker-compose "$@"
   fi
 }
 

@@ -33,7 +33,7 @@ else
   echo "  Docker is already installed."
 fi
 
-sudo usermod -aG docker "$USER" || true
+sudo usermod -aG docker ubuntu || true
 
 echo "[3/6] Verifying Docker Compose..."
 if docker compose version >/dev/null 2>&1; then
