@@ -89,7 +89,13 @@ def call_openrouter(prompt: str) -> dict:
             last_error = f"{model}: timed out"
         except requests.exceptions.RequestException as exc:
             status_code = getattr(getattr(exc, "response", None), "status_code", None)
-            last_error = f"{model}: {exc}"
+            resp_body = ""
+            if hasattr(exc, "response") and exc.response is not None:
+                try:
+                    resp_body = exc.response.json().get("error", {}).get("message", "")
+                except Exception:
+                    resp_body = exc.response.text[:200]
+            last_error = f"{model}: HTTP {status_code} — {resp_body or str(exc)}"
             if status_code not in {429, 500, 502, 503, 504, None}:
                 break
 
