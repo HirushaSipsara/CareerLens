@@ -13,7 +13,6 @@ const spaceMono = Space_Mono({
 export const metadata: Metadata = {
   title: 'CareerLens',
   description: 'AI-powered career path recommender for tech professionals',
-  generator: 'v0.app',
   icons: {
     icon: [
       {
