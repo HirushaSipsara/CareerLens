@@ -2,23 +2,16 @@ version: '3.8'
 
 services:
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    build: ./backend
     ports:
-      - "8000:8000"
-    volumes:
-      - ./backend:/app
+      - "5000:5000"
     environment:
-      - APP_ENV=development
-      - DEBUG=true
+      - FLASK_ENV=development
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    build: ./frontend
     ports:
-      - "3000:80"
+      - "80:80"
     depends_on:
       - backend
 
@@ -27,7 +20,7 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./monitoring/prometheus:/etc/prometheus
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
 
   grafana:
     image: grafana/grafana:latest
@@ -36,4 +29,4 @@ services:
     depends_on:
       - prometheus
     volumes:
-      - ./monitoring/grafana:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
