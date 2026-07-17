@@ -5,9 +5,8 @@ import requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
-from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
+from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
 
-# Load .env from the same directory as this file (backend/)
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 
 app = Flask(__name__)
@@ -23,20 +22,13 @@ REQUEST_LATENCY = Histogram(
     "careerlens_request_duration_seconds",
     "Time spent processing /analyze"
 )
-ACTIVE_REQUESTS = Gauge(
-    "careerlens_active_requests",
-    "Number of requests currently being processed"
-)
 
 # ── OpenRouter config ───────────────────────────────────────────
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 MODEL_CANDIDATES = [
     os.getenv("OPENROUTER_MODEL", "google/gemma-4-31b-it:free"),
-    "openai/gpt-oss-20b:free",
-    "meta-llama/llama-3.3-70b-instruct:free",
-    "qwen/qwen3-next-80b-a3b-instruct:free",
-    "nousresearch/hermes-3-llama-3.1-405b:free",
+    "google/gemma-4-26b-a4b-it:free",
 ]
 
 
@@ -93,7 +85,7 @@ def call_openrouter(prompt: str) -> dict:
             )
             response.raise_for_status()
             return response.json()
-        except requests.exceptions.Timeout:
+        except requests.exceptions.Timeout as exc:
             last_error = f"{model}: timed out"
         except requests.exceptions.RequestException as exc:
             status_code = getattr(getattr(exc, "response", None), "status_code", None)
@@ -104,9 +96,7 @@ def call_openrouter(prompt: str) -> dict:
                 except Exception:
                     resp_body = exc.response.text[:200]
             last_error = f"{model}: HTTP {status_code} — {resp_body or str(exc)}"
-            # Only stop retrying on 400 (bad request - our fault, retrying won't help)
-            # All other errors (401, 404, 429, 5xx) should try the next model
-            if status_code == 400:
+            if status_code not in {429, 500, 502, 503, 504, None}:
                 break
 
     raise RuntimeError(last_error or "OpenRouter request failed")
@@ -125,59 +115,54 @@ def metrics():
 @app.route("/analyze", methods=["POST"])
 def analyze():
     start = time.time()
-    ACTIVE_REQUESTS.inc()
+
+    if not OPENROUTER_API_KEY:
+        REQUEST_COUNT.labels(status="error").inc()
+        return jsonify({"error": "OPENROUTER_API_KEY is not configured"}), 500
+
+    data = request.get_json(silent=True) or {}
+    cv_text = (data.get("cv_text") or "").strip()
+    skills = (data.get("skills") or "").strip()
+
+    if not cv_text or not skills:
+        REQUEST_COUNT.labels(status="error").inc()
+        return jsonify({"error": "cv_text and skills are required"}), 400
+
+    prompt = build_prompt(cv_text, skills)
 
     try:
-        if not OPENROUTER_API_KEY:
-            REQUEST_COUNT.labels(status="error").inc()
-            return jsonify({"error": "OPENROUTER_API_KEY is not configured"}), 500
+        raw = call_openrouter(prompt)
+    except RuntimeError as exc:
+        message = str(exc)
+        REQUEST_COUNT.labels(status="error").inc()
+        if "timed out" in message:
+            return jsonify({"error": "LLM request timed out. Try again."}), 504
+        return jsonify({"error": f"OpenRouter error: {message}"}), 502
 
-        data = request.get_json(silent=True) or {}
-        cv_text = (data.get("cv_text") or "").strip()
-        skills = (data.get("skills") or "").strip()
+    try:
+        content = raw["choices"][0]["message"]["content"].strip()
+    except (KeyError, IndexError, AttributeError, TypeError):
+        REQUEST_COUNT.labels(status="error").inc()
+        return jsonify({"error": "Unexpected response from OpenRouter"}), 502
 
-        if not cv_text or not skills:
-            REQUEST_COUNT.labels(status="error").inc()
-            return jsonify({"error": "cv_text and skills are required"}), 400
+    # Strip markdown fences if model wraps output in ```json ... ```
+    if content.startswith("```"):
+        content = content.split("```")[1]
+        if content.startswith("json"):
+            content = content[4:]
+        content = content.strip()
 
-        prompt = build_prompt(cv_text, skills)
+    try:
+        result = json.loads(content)
+    except json.JSONDecodeError:
+        REQUEST_COUNT.labels(status="error").inc()
+        return jsonify({"error": "Model returned invalid JSON. Try again."}), 500
 
-        try:
-            raw = call_openrouter(prompt)
-        except RuntimeError as exc:
-            message = str(exc)
-            REQUEST_COUNT.labels(status="error").inc()
-            if "timed out" in message:
-                return jsonify({"error": "LLM request timed out. Try again."}), 504
-            return jsonify({"error": f"OpenRouter error: {message}"}), 502
+    duration = time.time() - start
+    REQUEST_LATENCY.observe(duration)
+    REQUEST_COUNT.labels(status="success").inc()
 
-        try:
-            content = raw["choices"][0]["message"]["content"].strip()
-        except (KeyError, IndexError, AttributeError, TypeError):
-            REQUEST_COUNT.labels(status="error").inc()
-            return jsonify({"error": "Unexpected response from OpenRouter"}), 502
-
-        # Strip markdown fences if model wraps output in ```json ... ```
-        if content.startswith("```"):
-            content = content.split("```")[1]
-            if content.startswith("json"):
-                content = content[4:]
-            content = content.strip()
-
-        try:
-            result = json.loads(content)
-        except json.JSONDecodeError:
-            REQUEST_COUNT.labels(status="error").inc()
-            return jsonify({"error": "Model returned invalid JSON. Try again."}), 500
-
-        duration = time.time() - start
-        REQUEST_LATENCY.observe(duration)
-        REQUEST_COUNT.labels(status="success").inc()
-
-        return jsonify(result), 200
-
-    finally:
-        ACTIVE_REQUESTS.dec()
+    return jsonify(result), 200
 
 
 if __name__ == "__main__":

@@ -1,32 +1,50 @@
-version: '3.8'
-
 services:
   backend:
+    image: ${BACKEND_IMAGE:-careerlens-backend:local}
     build: ./backend
+    container_name: careerlens-backend
+    env_file:
+      - ./backend/.env
     ports:
       - "5000:5000"
-    environment:
-      - FLASK_ENV=development
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
   frontend:
+    image: ${FRONTEND_IMAGE:-careerlens-frontend:local}
     build: ./frontend
+    container_name: careerlens-frontend
     ports:
-      - "80:80"
+      - "8088:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
   prometheus:
     image: prom/prometheus:latest
-    ports:
-      - "9090:9090"
+    container_name: careerlens-prometheus
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    depends_on:
+      - backend
 
   grafana:
     image: grafana/grafana:latest
+    container_name: careerlens-grafana
     ports:
       - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
     depends_on:
       - prometheus
-    volumes:
-      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+
+volumes:
+  grafana-data:

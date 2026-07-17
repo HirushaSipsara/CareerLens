@@ -1,0 +1,6 @@
+.next
+.npm-cache
+node_modules/
+out/
+dev.out.log
+dev.err.log
