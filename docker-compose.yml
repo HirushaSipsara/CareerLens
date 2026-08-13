@@ -19,7 +19,8 @@ services:
     build: ./frontend
     container_name: careerlens-frontend
     ports:
-      - "8088:80"
+      # Local dev: set FRONTEND_PORT=8088 in your shell. Production EC2: leave unset (defaults to 80).
+      - "${FRONTEND_PORT:-8000}:80"
     depends_on:
       backend:
         condition: service_healthy

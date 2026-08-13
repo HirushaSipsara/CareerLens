@@ -1,5 +1,4 @@
-#!/usr/bin/env bash
-
+#!/bin/bash
 set -euo pipefail
 
 echo "Running one-time server provisioning..."

@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CareerLens Infrastructure Blueprint — DevOps Implementation Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blueprint-900:#071b34;
+    --blueprint-800:#0c2a4d;
+    --blueprint-700:#123a67;
+    --blueprint-600:#1c4d82;
+    --line:rgba(178,214,255,0.28);
+    --line-strong:rgba(178,214,255,0.55);
+    --vellum:#eef3f9;
+    --vellum-dim:#c9d9ec;
+    --ink:#e8f1fb;
+    --ink-dim:#9fb7d4;
+    --cyan:#6fd3f7;
+    --amber:#f2b84b;
+    --green:#7fd9a0;
+    --red:#f27e6a;
+    --radius:2px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--line) 1px, transparent 1px) 0 0/40px 40px,
+      linear-gradient(90deg, var(--line) 1px, transparent 1px) 0 0/40px 40px,
+      var(--blueprint-900);
+    background-attachment:fixed;
+    color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    line-height:1.6;
+  }
+  ::selection{background:var(--cyan);color:var(--blueprint-900);}
+
+  a{color:var(--cyan);}
+
+  .tag{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--cyan);
+  }
+
+  /* ===== Title block (blueprint corner stamp) ===== */
+  header.titleblock{
+    max-width:1180px;
+    margin:0 auto;
+    padding:56px 32px 40px;
+    border-bottom:1px solid var(--line-strong);
+  }
+  .stamp-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:24px;
+    flex-wrap:wrap;
+  }
+  .stamp-row .tag{margin-bottom:10px;display:block;}
+  h1.doctitle{
+    font-family:'Space Mono', monospace;
+    font-weight:700;
+    font-size:clamp(32px,5vw,58px);
+    line-height:1.05;
+    margin:0 0 14px;
+    color:var(--vellum);
+    max-width:820px;
+  }
+  h1.doctitle em{
+    font-style:normal;
+    color:var(--cyan);
+  }
+  .doc-sub{
+    max-width:640px;
+    color:var(--ink-dim);
+    font-size:16px;
+  }
+  .infobox{
+    border:1px solid var(--line-strong);
+    padding:14px 18px;
+    min-width:220px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    color:var(--vellum-dim);
+  }
+  .infobox div{display:flex;justify-content:space-between;gap:16px;padding:3px 0;border-bottom:1px dashed var(--line);}
+  .infobox div:last-child{border-bottom:none;}
+  .infobox span:first-child{color:var(--ink-dim);}
+
+  /* ===== Layout: sidebar + content ===== */
+  .layout{
+    max-width:1180px;
+    margin:0 auto;
+    display:grid;
+    grid-template-columns:220px 1fr;
+    gap:40px;
+    padding:40px 32px 120px;
+    align-items:start;
+  }
+  nav.sheetindex{
+    position:sticky;
+    top:24px;
+    border:1px solid var(--line-strong);
+    background:rgba(7,27,52,0.6);
+    backdrop-filter:blur(2px);
+    padding:16px;
+  }
+  nav.sheetindex .tag{margin-bottom:10px;}
+  nav.sheetindex ol{list-style:none;margin:0;padding:0;counter-reset:sheet;}
+  nav.sheetindex li{counter-increment:sheet;margin-bottom:2px;}
+  nav.sheetindex a{
+    display:flex;
+    gap:8px;
+    text-decoration:none;
+    color:var(--ink-dim);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px;
+    padding:5px 4px;
+    border-left:2px solid transparent;
+    transition:all .15s ease;
+  }
+  nav.sheetindex a:hover, nav.sheetindex a.active{
+    color:var(--vellum);
+    border-left:2px solid var(--cyan);
+    background:rgba(111,211,247,0.06);
+  }
+  nav.sheetindex a .num{color:var(--cyan);min-width:26px;}
+
+  main{min-width:0;}
+
+  /* ===== Hero pipeline diagram ===== */
+  .hero-diagram{
+    border:1px solid var(--line-strong);
+    padding:28px 24px 20px;
+    margin-bottom:56px;
+    position:relative;
+  }
+  .hero-diagram .tag{margin-bottom:16px;}
+  .hero-diagram svg{width:100%;height:auto;display:block;}
+  .diagram-caption{
+    margin-top:14px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+    color:var(--ink-dim);
+  }
+
+  /* ===== Section intro text ===== */
+  .lede{
+    max-width:760px;
+    color:var(--vellum-dim);
+    margin-bottom:64px;
+    font-size:16px;
+  }
+  .lede strong{color:var(--cyan);font-weight:600;}
+
+  /* ===== Phase sheets ===== */
+  section.phase{
+    border-top:1px solid var(--line-strong);
+    padding-top:36px;
+    margin-bottom:64px;
+    scroll-margin-top:24px;
+  }
+  .phase-head{
+    display:flex;
+    align-items:baseline;
+    gap:18px;
+    margin-bottom:6px;
+    flex-wrap:wrap;
+  }
+  .phase-num{
+    font-family:'Space Mono', monospace;
+    font-size:44px;
+    font-weight:700;
+    color:var(--blueprint-600);
+    -webkit-text-stroke:1px var(--cyan);
+    color:transparent;
+    line-height:1;
+  }
+  .phase-title{
+    font-family:'Space Mono', monospace;
+    font-size:22px;
+    font-weight:700;
+    color:var(--vellum);
+  }
+  .phase-goal{
+    color:var(--ink-dim);
+    max-width:720px;
+    margin:14px 0 26px;
+    padding:12px 16px;
+    border-left:2px solid var(--cyan);
+    background:rgba(111,211,247,0.05);
+    font-size:14.5px;
+  }
+  .phase-goal .tag{margin-bottom:4px;}
+
+  .subblock{margin-bottom:22px;}
+  .subhead{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--amber);
+    margin-bottom:10px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .subhead::after{
+    content:'';
+    flex:1;
+    height:1px;
+    background:var(--line);
+  }
+  ol.steps{margin:0;padding-left:0;list-style:none;counter-reset:step;}
+  ol.steps > li{
+    counter-increment:step;
+    position:relative;
+    padding:6px 0 6px 34px;
+    color:var(--vellum-dim);
+    font-size:14.5px;
+    border-bottom:1px dashed var(--line);
+  }
+  ol.steps > li:last-child{border-bottom:none;}
+  ol.steps > li::before{
+    content:counter(step);
+    position:absolute;
+    left:0;
+    top:6px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    color:var(--blueprint-900);
+    background:var(--cyan);
+    width:20px;height:20px;
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;
+  }
+  ul.plain{margin:6px 0 0 0;padding-left:20px;color:var(--vellum-dim);font-size:14px;}
+  ul.plain li{margin-bottom:4px;}
+
+  code, pre code{
+    font-family:'IBM Plex Mono', monospace;
+  }
+  code{
+    background:rgba(111,211,247,0.1);
+    color:var(--cyan);
+    padding:1px 6px;
+    font-size:0.88em;
+    border-radius:2px;
+  }
+  pre{
+    background:#051121;
+    border:1px solid var(--line);
+    border-left:3px solid var(--cyan);
+    padding:16px 18px;
+    overflow-x:auto;
+    font-size:13px;
+    color:#d7e8fa;
+    margin:0;
+  }
+  pre code{background:none;color:inherit;padding:0;}
+
+  .complete-when{
+    margin-top:24px;
+    border:1px solid rgba(127,217,160,0.4);
+    background:rgba(127,217,160,0.06);
+    padding:14px 18px;
+  }
+  .complete-when .subhead{color:var(--green);}
+  .complete-when .subhead::after{background:rgba(127,217,160,0.3);}
+
+  .test-block{
+    margin-top:18px;
+    border:1px solid rgba(242,126,106,0.35);
+    background:rgba(242,126,106,0.05);
+    padding:14px 18px;
+  }
+  .test-block .subhead{color:var(--red);}
+  .test-block .subhead::after{background:rgba(242,126,106,0.3);}
+
+  /* ===== Definition of done ===== */
+  section#dod{
+    border-top:1px solid var(--line-strong);
+    padding-top:36px;
+    margin-bottom:64px;
+  }
+  .dod-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+    gap:1px;
+    background:var(--line);
+    border:1px solid var(--line-strong);
+    margin-top:20px;
+  }
+  .dod-item{
+    background:var(--blueprint-900);
+    padding:16px 18px;
+    font-size:14px;
+    color:var(--vellum-dim);
+    display:flex;
+    gap:10px;
+  }
+  .dod-item::before{
+    content:'✓';
+    color:var(--green);
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:700;
+    flex-shrink:0;
+  }
+
+  /* ===== Commit sequence ===== */
+  section#commits{
+    border-top:1px solid var(--line-strong);
+    padding-top:36px;
+    margin-bottom:64px;
+  }
+  .commit-list{margin-top:20px;display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line-strong);}
+  .commit-row{
+    background:var(--blueprint-900);
+    display:grid;
+    grid-template-columns:90px 1fr;
+    padding:11px 18px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    align-items:center;
+  }
+  .commit-row .kind{color:var(--amber);font-weight:600;}
+  .commit-row .msg{color:var(--vellum-dim);}
+
+  /* ===== References ===== */
+  section#refs{
+    border-top:1px solid var(--line-strong);
+    padding-top:36px;
+    margin-bottom:20px;
+  }
+  .refs-list{margin-top:16px;display:grid;gap:10px;}
+  .refs-list a{
+    display:block;
+    font-size:14px;
+    color:var(--vellum-dim);
+    text-decoration:none;
+    border-bottom:1px solid var(--line);
+    padding-bottom:8px;
+  }
+  .refs-list a:hover{color:var(--cyan);}
+  .refs-list .url{display:block;font-family:'IBM Plex Mono', monospace;font-size:11.5px;color:var(--ink-dim);margin-top:2px;}
+
+  footer{
+    max-width:1180px;
+    margin:0 auto;
+    padding:24px 32px 60px;
+    color:var(--ink-dim);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+    border-top:1px solid var(--line);
+    text-align:center;
+  }
+
+  @media (max-width:880px){
+    .layout{grid-template-columns:1fr;}
+    nav.sheetindex{position:static;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+  }
+</style>
+</head>
+<body>
+
+<header class="titleblock">
+  <div class="stamp-row">
+    <div>
+      <span class="tag">Sheet A-00 / Project: CareerLens</span>
+      <h1 class="doctitle">Infrastructure <em>Blueprint</em><br>for a Single-EC2 Deployment</h1>
+      <p class="doc-sub">A phase-by-phase implementation and learning plan — from a safe local baseline to an approved, observable, rollback-capable production release.</p>
+    </div>
+    <div class="infobox">
+      <div><span>Phases</span><span>00 – 10</span></div>
+      <div><span>Target</span><span>1× public EC2</span></div>
+      <div><span>Access</span><span>SSM, no SSH</span></div>
+      <div><span>Release unit</span><span>Git SHA image</span></div>
+      <div><span>State</span><span>S3, encrypted, locked</span></div>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+
+  <nav class="sheetindex" id="sheetnav">
+    <span class="tag">Sheet index</span>
+    <ol>
+      <li><a href="#phase0"><span class="num">00</span> Safe baseline</a></li>
+      <li><a href="#phase1"><span class="num">01</span> Reproducible Terraform</a></li>
+      <li><a href="#phase2"><span class="num">02</span> Remote state</a></li>
+      <li><a href="#phase3"><span class="num">03</span> Secure AWS foundation</a></li>
+      <li><a href="#phase4"><span class="num">04</span> Idempotent bootstrap</a></li>
+      <li><a href="#phase5"><span class="num">05</span> Immutable deploy + rollback</a></li>
+      <li><a href="#phase6"><span class="num">06</span> PR quality gates</a></li>
+      <li><a href="#phase7"><span class="num">07</span> Approved delivery</a></li>
+      <li><a href="#phase8"><span class="num">08</span> Secrets management</a></li>
+      <li><a href="#phase9"><span class="num">09</span> Observability</a></li>
+      <li><a href="#phase10"><span class="num">10</span> Recovery &amp; teardown</a></li>
+      <li><a href="#dod"><span class="num">▣</span> Definition of done</a></li>
+      <li><a href="#commits"><span class="num">▣</span> Commit sequence</a></li>
+      <li><a href="#refs"><span class="num">▣</span> References</a></li>
+    </ol>
+  </nav>
+
+  <main>
+
+    <div class="hero-diagram">
+      <span class="tag">Target workflow &amp; architecture</span>
+      <svg viewBox="0 0 980 300" xmlns="http://www.w3.org/2000/svg" aria-label="Pipeline and architecture diagram">
+        <defs>
+          <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill="#6fd3f7"/>
+          </marker>
+        </defs>
+        <!-- pipeline row -->
+        <g font-family="IBM Plex Mono, monospace" font-size="11" fill="#c9d9ec">
+          <text x="10" y="20">feature branch</text>
+          <text x="120" y="20">tests / lint / build</text>
+          <text x="270" y="20">tf fmt+validate+scan</text>
+          <text x="420" y="20">PR plan</text>
+          <text x="500" y="20">review + merge</text>
+          <text x="610" y="20">env approval</text>
+          <text x="710" y="20">apply plan</text>
+          <text x="800" y="20">build+push ECR</text>
+          <text x="900" y="20">SSM deploy</text>
+        </g>
+        <line x1="10" y1="34" x2="960" y2="34" stroke="#6fd3f7" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#arrow)"/>
+        <g font-family="IBM Plex Mono, monospace" font-size="10.5" fill="#9fb7d4">
+          <text x="0" y="54">health check → automatic rollback on failure</text>
+        </g>
+
+        <!-- architecture box -->
+        <g transform="translate(0,80)">
+          <rect x="0" y="0" width="980" height="200" fill="none" stroke="rgba(178,214,255,0.35)" stroke-dasharray="2 3"/>
+          <text x="16" y="22" font-family="IBM Plex Mono, monospace" font-size="11" fill="#6fd3f7">INTERNET</text>
+          <line x1="90" y1="17" x2="200" y2="17" stroke="#f2b84b" stroke-width="1.5" marker-end="url(#arrow)"/>
+          <text x="95" y="12" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="#f2b84b">80 / 443</text>
+
+          <rect x="205" y="0" width="140" height="34" fill="none" stroke="#6fd3f7"/>
+          <text x="220" y="21" font-family="IBM Plex Mono, monospace" font-size="11" fill="#e8f1fb">nginx frontend</text>
+
+          <line x1="345" y1="17" x2="440" y2="17" stroke="#6fd3f7" stroke-width="1.5" marker-end="url(#arrow)"/>
+          <text x="350" y="12" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="#9fb7d4">private docker net</text>
+
+          <rect x="445" y="0" width="150" height="34" fill="none" stroke="#6fd3f7"/>
+          <text x="470" y="21" font-family="IBM Plex Mono, monospace" font-size="11" fill="#e8f1fb">Flask : 5000</text>
+
+          <rect x="445" y="46" width="230" height="34" fill="none" stroke="rgba(178,214,255,0.5)" stroke-dasharray="3 3"/>
+          <text x="460" y="67" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="#9fb7d4">Prometheus + Grafana (restricted)</text>
+
+          <line x1="0" y1="120" x2="980" y2="120" stroke="rgba(178,214,255,0.2)"/>
+
+          <text x="16" y="142" font-family="IBM Plex Mono, monospace" font-size="11" fill="#7fd9a0">GitHub Actions</text>
+          <line x1="120" y1="137" x2="230" y2="137" stroke="#7fd9a0" stroke-width="1.5" marker-end="url(#arrow)"/>
+          <text x="126" y="132" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="#7fd9a0">OIDC</text>
+          <rect x="235" y="120" width="120" height="34" fill="none" stroke="#7fd9a0"/>
+          <text x="248" y="141" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="#e8f1fb">AWS IAM role</text>
+          <line x1="355" y1="137" x2="470" y2="137" stroke="#7fd9a0" stroke-width="1.5" marker-end="url(#arrow)"/>
+          <text x="475" y="141" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="#9fb7d4">ECR / Terraform / SSM</text>
+
+          <text x="16" y="185" font-family="IBM Plex Mono, monospace" font-size="11" fill="#f2b84b">Terraform state</text>
+          <line x1="140" y1="180" x2="260" y2="180" stroke="#f2b84b" stroke-width="1.5" marker-end="url(#arrow)"/>
+          <text x="265" y="184" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="#9fb7d4">encrypted, versioned S3 backend + locking</text>
+
+          <text x="620" y="185" font-family="IBM Plex Mono, monospace" font-size="11" fill="#6fd3f7">Administrator</text>
+          <line x1="720" y1="180" x2="820" y2="180" stroke="#6fd3f7" stroke-width="1.5" marker-end="url(#arrow)"/>
+          <text x="825" y="184" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="#9fb7d4">SSM Session Manager</text>
+        </g>
+      </svg>
+      <p class="diagram-caption">Only ports 80/443 face the internet. Everything else — app, metrics, admin access — stays behind the private network or SSM.</p>
+    </div>
+
+    <p class="lede">This plan converts the CareerLens DevOps skeleton into a secure, repeatable, reviewable deployment on a <strong>single public EC2 instance</strong> running immutable containers, administered through <strong>AWS Systems Manager</strong>. Load balancers, private subnets, autoscaling, and custom AMIs are later-stage upgrades — not requirements for learning the core workflow. Work through the phases in order; each one has a learning objective, implementation tasks, a verification step, and a completion checkpoint. <strong>Never run <code>terraform apply</code></strong> until the plan has been reviewed and its cost estimated.</p>
+
+    <!-- ===================== PHASE 0 ===================== -->
+    <section class="phase" id="phase0">
+      <div class="phase-head">
+        <span class="phase-num">00</span>
+        <span class="phase-title">Establish a Safe Baseline</span>
+      </div>
+      <div class="phase-goal"><span class="tag">Learn</span>Infrastructure changes need a known starting point, small commits, and evidence that existing behavior still works.</div>
+
+      <div class="subblock">
+        <div class="subhead">Implement</div>
+        <ol class="steps">
+          <li>Create a feature branch: <code>git switch -c feat/devops-foundation</code>.</li>
+          <li>Record installed versions of Terraform, Docker, Docker Compose, Python, Node.js, and the AWS CLI.</li>
+          <li>Confirm AWS identity and region with <code>aws sts get-caller-identity</code> and <code>aws configure get region</code>.</li>
+          <li>Copy local secrets somewhere secure before changing configuration. Never print them.</li>
+          <li>Add <code>.gitattributes</code> so <code>*.sh</code> and <code>*.tf</code> use LF line endings.</li>
+          <li>Make both shell scripts executable in Git: <code>git update-index --chmod=+x scripts/setup.sh scripts/deploy.sh</code>.</li>
+          <li>Run the application baseline (below) end to end.</li>
+        </ol>
+      </div>
+
+      <div class="subblock">
+        <div class="subhead">Baseline commands</div>
+        <pre><code>Set-Location backend
+python -m pip install -r requirements.txt
+python -m pytest
+
+Set-Location ..\frontend
+npm ci
+npm run lint
+npm run build
+
+Set-Location ..
+docker compose config
+docker compose up --build -d
+docker compose ps
+Invoke-RestMethod http://localhost:5000/health
+docker compose down</code></pre>
+      </div>
+
+      <div class="complete-when">
+        <div class="subhead">Complete when</div>
+        <ul class="plain">
+          <li>Tests and builds pass, or any pre-existing failures are documented.</li>
+          <li>Secrets and generated files remain untracked.</li>
+          <li>Shell files are stored as executable LF files.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ===================== PHASE 1 ===================== -->
+    <section class="phase" id="phase1">
+      <div class="phase-head">
+        <span class="phase-num">01</span>
+        <span class="phase-title">Make Terraform Reproducible</span>
+      </div>
+      <div class="phase-goal"><span class="tag">Learn</span><code>fmt</code> provides canonical formatting, <code>validate</code> checks configuration consistency, and the dependency lock file makes provider selection repeatable.</div>
+
+      <div class="subblock">
+        <div class="subhead">Implement</div>
+        <ol class="steps">
+          <li>Split configuration by responsibility into <code>backend.tf</code>, <code>compute.tf</code>, <code>data.tf</code>, <code>iam.tf</code>, <code>network.tf</code>, <code>outputs.tf</code>, <code>providers.tf</code>, <code>security.tf</code>, <code>terraform.tf</code>, <code>variables.tf</code>, and <code>terraform.tfvars.example</code>.</li>
+          <li>Keep Terraform and provider constraints in <code>terraform.tf</code>.</li>
+          <li>Run <code>terraform init -backend=false</code>; commit the generated <code>.terraform.lock.hcl</code>.</li>
+          <li>Remove <code>.terraform.lock.hcl</code> from <code>.gitignore</code>. Keep ignoring <code>.terraform/</code>, state, saved plans, and real <code>.tfvars</code> files.</li>
+          <li>Add validations for <code>aws_region</code>, <code>instance_type</code>, <code>project_name</code>, and any CIDR inputs.</li>
+          <li>Replace placeholder repository values with explicit variables, or remove the dependency on cloning source code.</li>
+          <li>Decide how AMI updates occur — never let a server silently replace itself whenever <code>most_recent</code> selects a new image. Pin a reviewed AMI ID per environment, or use a controlled AMI-version variable.</li>
+          <li>Create <code>terraform.tfvars.example</code> with non-secret example values only.</li>
+        </ol>
+      </div>
+
+      <div class="subblock">
+        <div class="subhead">Verify</div>
+        <pre><code>terraform -chdir=terraform fmt -recursive
+terraform -chdir=terraform init -backend=false
+terraform -chdir=terraform validate
+terraform -chdir=terraform providers lock -platform=windows_amd64 -platform=linux_amd64
+git diff --check
+git status --short</code></pre>
+      </div>
+
+      <div class="complete-when">
+        <div class="subhead">Complete when</div>
+        <ul class="plain">
+          <li>Formatting and validation pass.</li>
+          <li>The provider lock file is committed with Windows and Linux checksums.</li>
+          <li>No placeholder or secret is required to parse the configuration.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ===================== PHASE 2 ===================== -->
+    <section class="phase" id="phase2">
+      <div class="phase-head">
+        <span class="phase-num">02</span>
+        <span class="phase-title">Add Remote State Safely</span>
+      </div>
+      <div class="phase-goal"><span class="tag">Learn</span>Terraform state can contain sensitive data. Teams need encrypted remote storage, version recovery, access control, and protection against concurrent writes.</div>
+
+      <div class="subblock">
+        <div class="subhead">Implement</div>
+        <ol class="steps">
+          <li>Create a small <code>terraform/bootstrap/</code> root module for the state resources, or use HCP Terraform. For AWS, provision a uniquely named private S3 bucket, default server-side encryption, bucket versioning, public-access blocking, a bucket policy requiring TLS, and state locking supported by the backend/Terraform version.</li>
+          <li>Apply this bootstrap once using a tightly controlled local state. Store its state securely; do not commit it.</li>
+          <li>Add an S3 backend to the main root module. Backend settings cannot use ordinary Terraform variables, so keep non-secret environment configuration in files such as <code>environments/dev.s3.tfbackend</code>.</li>
+          <li>Migrate existing state with <code>terraform init -migrate-state</code> only after backing it up.</li>
+          <li>Grant the CI Terraform role access only to the required state key and lock mechanism.</li>
+        </ol>
+      </div>
+
+      <div class="subblock">
+        <div class="subhead">Verify</div>
+        <pre><code>terraform -chdir=terraform init -reconfigure -backend-config=environments/dev.s3.tfbackend
+terraform -chdir=terraform state list
+terraform -chdir=terraform plan -var-file=environments/dev.tfvars</code></pre>
+        <p style="color:var(--ink-dim);font-size:13.5px;margin-top:10px;">Test locking with two simultaneous plans in a disposable environment. Confirm bucket versioning and ensure state does not appear in Git.</p>
+      </div>
+
+      <div class="complete-when">
+        <div class="subhead">Complete when</div>
+        <ul class="plain">
+          <li>State is remote, encrypted, recoverable, and lock-protected.</li>
+          <li>A second operator can initialize from a clean checkout.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ===================== PHASE 3 ===================== -->
+    <section class="phase" id="phase3">
+      <div class="phase-head">
+        <span class="phase-num">03</span>
+        <span class="phase-title">Build a Secure AWS Foundation</span>
+      </div>
+      <div class="phase-goal"><span class="tag">Learn</span>Infrastructure should expose the smallest possible attack surface and give each workload only the permissions it needs.</div>
+
+      <div class="subblock">
+        <div class="subhead">Implement</div>
+        <ol class="steps">
+          <li>Create an explicit VPC, public subnet, internet gateway, route table, and associations rather than depending on the account's default VPC.</li>
+          <li>Permit public inbound traffic only on <code>80</code> and, after TLS is configured, <code>443</code>.</li>
+          <li>Do not expose <code>5000</code>, <code>9090</code>, or <code>3001</code> publicly. Keep them on the Docker network or restrict administrative access through SSM port forwarding / VPN.</li>
+          <li>Add an EC2 IAM role and instance profile for SSM managed-instance access, read-only pulls from the CareerLens ECR repositories, and read access to only the required runtime parameters.</li>
+          <li>Remove the SSH key and port <code>22</code> after SSM access is proven. If temporarily retained, restrict it to a validated <code>/32</code> CIDR.</li>
+          <li>Require IMDSv2 with <code>http_tokens = "required"</code>.</li>
+          <li>Encrypt the root EBS volume, enable delete-on-termination deliberately, and tag all resources consistently through provider <code>default_tags</code>.</li>
+          <li>Use a stable DNS name. Introduce HTTPS before treating the service as production-facing.</li>
+          <li>Add budget alerts and document resources that incur hourly or public-IPv4 charges.</li>
+        </ol>
+      </div>
+
+      <div class="subblock">
+        <div class="subhead">Verify</div>
+        <ul class="plain">
+          <li>SSM reports the instance as managed and a Session Manager shell opens.</li>
+          <li>AWS security groups show no public rules for ports 22, 5000, 9090, or 3001.</li>
+          <li><code>curl</code> to the public Flask/Prometheus/Grafana ports fails.</li>
+          <li>EBS encryption and IMDSv2 enforcement are visible in AWS.</li>
+        </ul>
+      </div>
+
+      <div class="complete-when">
+        <div class="subhead">Complete when</div>
+        <ul class="plain"><li>Only the web entry point is public and administration works without SSH.</li></ul>
+      </div>
+    </section>
+
+    <!-- ===================== PHASE 4 ===================== -->
+    <section class="phase" id="phase4">
+      <div class="phase-head">
+        <span class="phase-num">04</span>
+        <span class="phase-title">Implement Idempotent Server Bootstrap</span>
+      </div>
+      <div class="phase-goal"><span class="tag">Learn</span>Bootstrap prepares a host; deployment releases an application. Keeping them separate prevents every release from changing the operating system.</div>
+
+      <div class="subblock">
+        <div class="subhead">Implement scripts/setup.sh</div>
+        <ol class="steps">
+          <li>Keep <code>#!/bin/bash</code> and <code>set -euo pipefail</code>.</li>
+          <li>Add small functions: <code>log</code>, <code>fail</code>, <code>require_root</code>, <code>install_docker</code>, <code>create_directories</code>, and <code>configure_service</code>.</li>
+          <li>Send errors to stderr and add a <code>trap</code> that reports the failing line number.</li>
+          <li>Set <code>DEBIAN_FRONTEND=noninteractive</code> only for package commands.</li>
+          <li>Install Docker from its official repository and install the Compose plugin.</li>
+          <li>Create <code>/opt/careerlens/releases</code>, <code>/opt/careerlens/config</code>, and <code>/var/log/careerlens</code> with explicit owner and permissions.</li>
+          <li>Install the production Compose manifest and deployment script. Do not copy application source or build images on the server.</li>
+          <li>Confirm the SSM agent and Docker service are enabled and running.</li>
+          <li>Make every step idempotent: a second execution must produce the same final state without failing or duplicating configuration.</li>
+          <li>Keep cloud-init / user data thin. Render it with <code>templatefile()</code> and use it only to invoke bootstrap and record logs.</li>
+        </ol>
+      </div>
+
+      <div class="subblock">
+        <div class="subhead">Verify</div>
+        <pre><code>shellcheck scripts/setup.sh scripts/deploy.sh
+shfmt -d scripts/setup.sh scripts/deploy.sh
+bash -n scripts/setup.sh
+sudo bash scripts/setup.sh
+sudo bash scripts/setup.sh
+systemctl is-active docker
+docker compose version</code></pre>
+        <p style="color:var(--ink-dim);font-size:13.5px;margin-top:10px;">Inspect <code>/var/log/cloud-init-output.log</code>. Both setup executions must succeed.</p>
+      </div>
+
+      <div class="complete-when">
+        <div class="subhead">Complete when</div>
+        <ul class="plain"><li>A fresh instance becomes deployment-ready automatically, and rerunning setup is safe.</li></ul>
+      </div>
+    </section>
+
+    <!-- ===================== PHASE 5 ===================== -->
+    <section class="phase" id="phase5">
+      <div class="phase-head">
+        <span class="phase-num">05</span>
+        <span class="phase-title">Implement Immutable Deployment and Rollback</span>
+      </div>
+      <div class="phase-goal"><span class="tag">Learn</span>A release is an exact artifact, not whatever <code>latest</code> or a Git branch happens to contain. A deployment is complete only after verification, and a failed release must be recoverable.</div>
+
+      <div class="subblock">
+        <div class="subhead">Implement</div>
+        <ol class="steps">
+          <li>Let Terraform create separate ECR repositories for frontend and backend images.</li>
+          <li>Create <code>docker-compose.prod.yml</code> containing <code>image:</code> references only — no <code>build:</code> directives.</li>
+          <li>Tag both images with the full Git commit SHA. Optionally add a human-readable release tag, but deploy by immutable SHA or image digest.</li>
+          <li>Make <code>deploy.sh</code> accept one required release identifier.</li>
+          <li>In the script: validate the release format and required commands/files; acquire a <code>flock</code> lock so two deployments cannot overlap; authenticate to ECR through the EC2 instance role; record the currently running release; write the candidate release to a temporary environment file; run <code>docker compose pull</code> and <code>docker compose up -d --remove-orphans</code>; poll backend and frontend health endpoints with a bounded timeout; mark the release successful only after health checks pass; restore and verify the previous release if the candidate fails; remove old unused images conservatively, never deleting the rollback image.</li>
+          <li>Do not log API keys, tokens, registry passwords, or complete environment files.</li>
+          <li>Add an application <code>/version</code> endpoint returning the deployed Git SHA so releases are observable.</li>
+        </ol>
+      </div>
+
+      <div class="test-block">
+        <div class="subhead">Test</div>
+        <ul class="plain">
+          <li>Deploy a valid SHA.</li>
+          <li>Deploy the same SHA again; it should be safe.</li>
+          <li>Deploy a deliberately unhealthy image and prove rollback.</li>
+          <li>Start two deployments and prove the second is rejected or waits.</li>
+          <li>Reboot the instance and prove the last healthy release starts.</li>
+        </ul>
+      </div>
+
+      <div class="complete-when">
+        <div class="subhead">Complete when</div>
+        <ul class="plain"><li>Every running container maps to a commit, failed health checks roll back, and deployment requires no source build on EC2.</li></ul>
+      </div>
+    </section>
+
+    <!-- ===================== PHASE 6 ===================== -->
+    <section class="phase" id="phase6">
+      <div class="phase-head">
+        <span class="phase-num">06</span>
+        <span class="phase-title">Add Pull-Request Quality Gates</span>
+      </div>
+      <div class="phase-goal"><span class="tag">Learn</span>CI answers whether a change is safe to review. It must not deploy unreviewed pull-request code.</div>
+
+      <div class="subblock">
+        <div class="subhead">Implement — focused workflows, not one large script</div>
+        <ul class="plain">
+          <li><strong style="color:var(--vellum)">app-ci.yml</strong> — backend dependency install + pytest; frontend <code>npm ci</code>, lint, production build; frontend and backend Docker builds without pushing.</li>
+          <li><strong style="color:var(--vellum)">terraform-ci.yml</strong> — pin the Terraform CLI version; <code>terraform fmt -check -recursive</code>; <code>terraform init -backend=false</code> + <code>validate</code>; TFLint with the AWS ruleset; a security/configuration scan such as Trivy or Checkov; a real plan for trusted pull requests using a least-privileged planning role.</li>
+          <li><strong style="color:var(--vellum)">shell-ci.yml</strong> — <code>shellcheck scripts/*.sh</code>; <code>shfmt -d scripts/*.sh</code>.</li>
+        </ul>
+        <ol class="steps" style="margin-top:14px;">
+          <li>Give workflows minimum <code>permissions</code>, add concurrency controls, pin third-party actions to reviewed versions or commit SHAs, and enable dependency updates.</li>
+          <li>Never provide AWS privileges or secrets to untrusted fork pull requests.</li>
+        </ol>
+      </div>
+
+      <div class="complete-when">
+        <div class="subhead">Complete when</div>
+        <ul class="plain"><li>Branch protection requires all relevant checks and reviewers can inspect the infrastructure plan before merging.</li></ul>
+      </div>
+    </section>
+
+    <!-- ===================== PHASE 7 ===================== -->
+    <section class="phase" id="phase7">
+      <div class="phase-head">
+        <span class="phase-num">07</span>
+        <span class="phase-title">Add Approved Continuous Delivery</span>
+      </div>
+      <div class="phase-goal"><span class="tag">Learn</span>Authentication, authorization, artifact promotion, and approval are separate controls.</div>
+
+      <div class="subblock">
+        <div class="subhead">Implement</div>
+        <ol class="steps">
+          <li>Configure GitHub-to-AWS OIDC. Do not create long-lived AWS access keys for Actions.</li>
+          <li>Create separate least-privileged IAM roles for Terraform plan, Terraform apply, image build/push, and application deployment through SSM.</li>
+          <li>Restrict role trust policies to the exact repository, branch, workflow, and protected GitHub environment.</li>
+          <li>Create a protected <code>production</code> environment with required approval.</li>
+          <li>On merge to <code>main</code>: re-run all checks; produce and preserve a Terraform plan; require approval, then apply that exact plan; build and push frontend/backend images tagged with the same Git SHA; generate an SBOM and scan images before promotion; sign images if adding a supply-chain tool such as Cosign; invoke deployment through SSM Run Command; verify <code>/health</code> and <code>/version</code> externally.</li>
+          <li>Use GitHub <code>concurrency</code> so only one production deployment runs at a time.</li>
+          <li>Store deployment evidence: commit SHA, image digests, plan, approver, timestamps, health result, and rollback result.</li>
+        </ol>
+      </div>
+
+      <div class="complete-when">
+        <div class="subhead">Complete when</div>
+        <ul class="plain"><li>A merge cannot deploy without checks and approval, AWS uses short-lived credentials, and the deployed SHA is independently verifiable.</li></ul>
+      </div>
+    </section>
+
+    <!-- ===================== PHASE 8 ===================== -->
+    <section class="phase" id="phase8">
+      <div class="phase-head">
+        <span class="phase-num">08</span>
+        <span class="phase-title">Manage Secrets Correctly</span>
+      </div>
+      <div class="phase-goal"><span class="tag">Learn</span>Marking a Terraform value <code>sensitive</code> only hides display; Terraform may still store it in state.</div>
+
+      <div class="subblock">
+        <div class="subhead">Implement</div>
+        <ol class="steps">
+          <li>Store <code>OPENROUTER_API_KEY</code> in AWS Systems Manager Parameter Store as <code>SecureString</code>, or in Secrets Manager.</li>
+          <li>Create the secret value outside Terraform so it never enters Terraform state. Terraform may manage only the parameter metadata and access policy if appropriate.</li>
+          <li>Grant the instance role access to that one secret path.</li>
+          <li>Retrieve it at runtime into a root-owned file with mode <code>0600</code>, or inject it through a controlled service mechanism.</li>
+          <li>Define a rotation and revocation process.</li>
+          <li>Run secret scanning in CI and enable repository secret protection.</li>
+        </ol>
+      </div>
+
+      <div class="complete-when">
+        <div class="subhead">Complete when</div>
+        <ul class="plain"><li>No application secret exists in Git, Terraform state, container images, Compose files, user data, logs, or workflow output.</li></ul>
+      </div>
+    </section>
+
+    <!-- ===================== PHASE 9 ===================== -->
+    <section class="phase" id="phase9">
+      <div class="phase-head">
+        <span class="phase-num">09</span>
+        <span class="phase-title">Observability and Operations</span>
+      </div>
+      <div class="phase-goal"><span class="tag">Learn</span>Metrics are useful only when they are secured, retained, and connected to actionable alerts and runbooks.</div>
+
+      <div class="subblock">
+        <div class="subhead">Implement</div>
+        <ol class="steps">
+          <li>Keep Prometheus and Grafana private; access them through SSM forwarding or a protected network path.</li>
+          <li>Replace the default Grafana admin password and provision dashboards/data sources as code.</li>
+          <li>Pin Prometheus and Grafana image versions instead of using <code>latest</code>.</li>
+          <li>Configure log rotation and container restart policies.</li>
+          <li>Add alarms for instance status checks, disk use, memory pressure, elevated API errors, and latency.</li>
+          <li>Add runbooks for deployment failure, unhealthy service, disk exhaustion, lost secret, and state recovery.</li>
+          <li>Back up Grafana, or deliberately treat it as reproducible/replaceable.</li>
+        </ol>
+      </div>
+
+      <div class="complete-when">
+        <div class="subhead">Complete when</div>
+        <ul class="plain"><li>An operator can detect a failure, identify the deployed version, find relevant logs/metrics, and follow a tested recovery procedure.</li></ul>
+      </div>
+    </section>
+
+    <!-- ===================== PHASE 10 ===================== -->
+    <section class="phase" id="phase10">
+      <div class="phase-head">
+        <span class="phase-num">10</span>
+        <span class="phase-title">Recovery, Drift, and Teardown Drills</span>
+      </div>
+      <div class="phase-goal"><span class="tag">Learn</span>Backups and rollback claims are not real until they are tested.</div>
+
+      <div class="subblock">
+        <div class="subhead">Implement and test</div>
+        <ol class="steps">
+          <li>Restore an earlier S3 state version in a disposable environment.</li>
+          <li>Replace the EC2 instance and prove bootstrap plus deployment recover service.</li>
+          <li>Run a scheduled read-only <code>terraform plan -detailed-exitcode</code> to detect drift.</li>
+          <li>Test application rollback to the previous image digest.</li>
+          <li>Use <code>terraform plan -destroy</code> before teardown and require explicit approval.</li>
+          <li>Destroy the disposable environment and confirm no chargeable resources remain: instances, EBS volumes/snapshots, Elastic IPs, load balancers, NAT gateways, ECR images, and monitoring storage.</li>
+        </ol>
+      </div>
+
+      <div class="complete-when">
+        <div class="subhead">Complete when</div>
+        <ul class="plain"><li>Recovery and teardown procedures are documented with actual test evidence.</li></ul>
+      </div>
+    </section>
+
+    <!-- ===================== DEFINITION OF DONE ===================== -->
+    <section id="dod">
+      <span class="tag">Sheet A-11 / Final review</span>
+      <h2 class="phase-title" style="font-size:26px;margin-top:8px;">Definition of Done</h2>
+      <p style="color:var(--ink-dim);max-width:700px;">The DevOps implementation is complete only when every statement below is true.</p>
+      <div class="dod-grid">
+        <div class="dod-item">A clean checkout can initialize and validate Terraform.</div>
+        <div class="dod-item"><code style="background:none;color:inherit;padding:0;">fmt</code>, <code style="background:none;color:inherit;padding:0;">validate</code>, lint, tests, security scans, and container builds pass in CI.</div>
+        <div class="dod-item">Pull requests display a reviewable Terraform plan and never deploy.</div>
+        <div class="dod-item">State is encrypted, remote, versioned, and lock-protected.</div>
+        <div class="dod-item">The server exposes only intentional web ports and is administered through SSM.</div>
+        <div class="dod-item">The host is reproducibly bootstrapped and the setup script is idempotent.</div>
+        <div class="dod-item">Images are built once, scanned, and deployed by immutable SHA/digest.</div>
+        <div class="dod-item">Production apply/deploy requires a protected approval and short-lived OIDC credentials.</div>
+        <div class="dod-item">Health checks verify every release and a failed release rolls back automatically.</div>
+        <div class="dod-item">Secrets are absent from Git, state, images, user data, and logs.</div>
+        <div class="dod-item">Monitoring, incident runbooks, recovery, drift detection, and teardown have been tested.</div>
+      </div>
+    </section>
+
+    <!-- ===================== COMMIT SEQUENCE ===================== -->
+    <section id="commits">
+      <span class="tag">Sheet A-12 / Version control</span>
+      <h2 class="phase-title" style="font-size:26px;margin-top:8px;">Recommended Commit Sequence</h2>
+      <p style="color:var(--ink-dim);max-width:700px;">Keep reviewable commits aligned to learning outcomes.</p>
+      <div class="commit-list">
+        <div class="commit-row"><span class="kind">chore</span><span class="msg">normalize infrastructure file conventions</span></div>
+        <div class="commit-row"><span class="kind">refactor</span><span class="msg">organize Terraform root module</span></div>
+        <div class="commit-row"><span class="kind">feat</span><span class="msg">add remote Terraform state backend</span></div>
+        <div class="commit-row"><span class="kind">feat</span><span class="msg">provision secure CareerLens network and instance</span></div>
+        <div class="commit-row"><span class="kind">feat</span><span class="msg">add idempotent EC2 bootstrap</span></div>
+        <div class="commit-row"><span class="kind">feat</span><span class="msg">add immutable release deployment and rollback</span></div>
+        <div class="commit-row"><span class="kind">ci</span><span class="msg">add application and infrastructure quality gates</span></div>
+        <div class="commit-row"><span class="kind">ci</span><span class="msg">authenticate to AWS with GitHub OIDC</span></div>
+        <div class="commit-row"><span class="kind">feat</span><span class="msg">add approved production deployment workflow</span></div>
+        <div class="commit-row"><span class="kind">docs</span><span class="msg">add operations and disaster recovery runbooks</span></div>
+      </div>
+    </section>
+
+    <!-- ===================== LATER PROGRESSION ===================== -->
+    <section style="border-top:1px solid var(--line-strong);padding-top:36px;margin-bottom:64px;">
+      <span class="tag">Sheet A-13 / Roadmap</span>
+      <h2 class="phase-title" style="font-size:26px;margin-top:8px;">Later Industry Progression</h2>
+      <p style="color:var(--vellum-dim);max-width:760px;">After the single-instance workflow is proven, progress to separate development and production accounts, private application subnets, an HTTPS Application Load Balancer, managed DNS/certificates, autoscaling across Availability Zones, external managed monitoring, policy as code, and Packer/EC2 Image Builder. Add these because reliability or scale requires them — not merely to make the architecture look complex.</p>
+    </section>
+
+    <!-- ===================== REFERENCES ===================== -->
+    <section id="refs">
+      <span class="tag">Sheet A-14 / Primary learning references</span>
+      <h2 class="phase-title" style="font-size:26px;margin-top:8px;">References</h2>
+      <div class="refs-list">
+        <a href="https://developer.hashicorp.com/terraform/language/style" target="_blank" rel="noopener">Terraform configuration style<span class="url">developer.hashicorp.com/terraform/language/style</span></a>
+        <a href="https://developer.hashicorp.com/terraform/tutorials/automation/automate-terraform" target="_blank" rel="noopener">Terraform automation workflow<span class="url">developer.hashicorp.com/terraform/tutorials/automation/automate-terraform</span></a>
+        <a href="https://developer.hashicorp.com/terraform/language/state/remote" target="_blank" rel="noopener">Terraform remote state<span class="url">developer.hashicorp.com/terraform/language/state/remote</span></a>
+        <a href="https://developer.hashicorp.com/terraform/language/files/dependency-lock" target="_blank" rel="noopener">Terraform dependency lock file<span class="url">developer.hashicorp.com/terraform/language/files/dependency-lock</span></a>
+        <a href="https://docs.github.com/en/actions/how-tos/secure-your-work/security-harden-deployments/oidc-in-aws" target="_blank" rel="noopener">GitHub Actions OIDC for AWS<span class="url">docs.github.com/.../oidc-in-aws</span></a>
+        <a href="https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager.html" target="_blank" rel="noopener">AWS Systems Manager Session Manager<span class="url">docs.aws.amazon.com/systems-manager/.../session-manager.html</span></a>
+        <a href="https://google.github.io/styleguide/shellguide.html" target="_blank" rel="noopener">Google Shell Style Guide<span class="url">google.github.io/styleguide/shellguide.html</span></a>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<footer>CareerLens Infrastructure Blueprint — Phases 00–10 — do not run <code style="background:none;color:var(--cyan);">terraform apply</code> without a reviewed plan and cost estimate.</footer>
+
+<script>
+  // Highlight active sheet in sidebar while scrolling
+  const links = document.querySelectorAll('#sheetnav a');
+  const sections = Array.from(links).map(l => document.querySelector(l.getAttribute('href'))).filter(Boolean);
+  function onScroll(){
+    let idx = 0;
+    const y = window.scrollY + 100;
+    sections.forEach((sec, i) => { if (sec.offsetTop <= y) idx = i; });
+    links.forEach(l => l.classList.remove('active'));
+    if (links[idx]) links[idx].classList.add('active');
+  }
+  document.addEventListener('scroll', onScroll, { passive:true });
+  onScroll();
+</script>
+
+</body>
+</html>
